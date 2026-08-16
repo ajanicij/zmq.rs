@@ -3,6 +3,7 @@
 mod async_rt;
 mod backend;
 mod codec;
+mod context;
 mod dealer;
 mod endpoint;
 mod error;
@@ -189,6 +190,7 @@ pub mod __bench {
     }
 }
 
+pub use crate::context::Context;
 pub use crate::dealer::*;
 pub use crate::endpoint::{Endpoint, Host, Transport, TryIntoEndpoint};
 pub use crate::error::{ZmqError, ZmqResult};

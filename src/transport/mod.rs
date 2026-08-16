@@ -1,3 +1,4 @@
+mod duplex;
 #[cfg(all(feature = "ipc-transport", any(target_family = "unix", windows)))]
 mod ipc;
 #[cfg(feature = "tcp-transport")]

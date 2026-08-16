@@ -200,15 +200,9 @@ mod tests {
                 Endpoint::Tcp(Host::Ipv4("127.0.0.1".parse().unwrap()), 0),
                 "tcp://127.0.0.1:0",
             ),
-            (
-                Endpoint::Inproc("step2".to_string()), "inproc://step2",
-            ),
-            (
-                Endpoint::Inproc("#1".to_string()), "inproc://#1",
-            ),
-            (
-                Endpoint::Inproc("a/b/c".to_string()), "inproc://a/b/c",
-            ),
+            (Endpoint::Inproc("step2".to_string()), "inproc://step2"),
+            (Endpoint::Inproc("#1".to_string()), "inproc://#1"),
+            (Endpoint::Inproc("a/b/c".to_string()), "inproc://a/b/c"),
         ]
     });
 

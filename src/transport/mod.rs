@@ -43,6 +43,9 @@ pub(crate) async fn connect(endpoint: &Endpoint) -> ZmqResult<(FramedIo, Endpoin
             #[cfg(not(all(feature = "ipc-transport", any(target_family = "unix", windows))))]
             panic!("IPC transport is not available on this platform")
         }
+        Endpoint::Inproc(_) => Err(crate::error::ZmqError::Socket(
+            "inproc transport is not yet implemented",
+        )),
     }
 }
 
@@ -86,6 +89,9 @@ where
             #[cfg(not(all(feature = "ipc-transport", any(target_family = "unix", windows))))]
             panic!("IPC transport is not available on this platform")
         }
+        Endpoint::Inproc(_) => Err(crate::error::ZmqError::Socket(
+            "inproc transport is not yet implemented",
+        )),
     }
 }
 

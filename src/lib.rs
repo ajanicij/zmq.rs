@@ -340,9 +340,11 @@ pub enum SocketEvent {
 
 pub const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
 
+#[derive(Clone)]
 pub struct SocketOptions {
     pub(crate) peer_id: Option<PeerIdentity>,
     pub(crate) connect_timeout: Option<Duration>,
+    pub(crate) context: Option<Context>,
 }
 
 impl Default for SocketOptions {
@@ -350,6 +352,7 @@ impl Default for SocketOptions {
         Self {
             peer_id: None,
             connect_timeout: Some(DEFAULT_CONNECT_TIMEOUT),
+            context: None,
         }
     }
 }
@@ -367,6 +370,15 @@ impl SocketOptions {
 
     pub fn no_connect_timeout(&mut self) -> &mut Self {
         self.connect_timeout = None;
+        self
+    }
+
+    /// Sets the shared [`Context`] used for `inproc://` bind/connect rendezvous.
+    ///
+    /// TCP and IPC ignore this setting. Both ends of an `inproc://` connection
+    /// must use the same `Context` (or clones of it).
+    pub fn context(&mut self, context: Context) -> &mut Self {
+        self.context = Some(context);
         self
     }
 }
@@ -456,7 +468,12 @@ pub trait Socket: Sized + Send {
             }
         };
 
-        let (endpoint, stop_handle) = transport::begin_accept(endpoint, cback).await?;
+        let (endpoint, stop_handle) = transport::begin_accept(
+            endpoint,
+            self.backend().socket_options().context.clone(),
+            cback,
+        )
+        .await?;
 
         if let Some(monitor) = self.backend().monitor().lock().as_mut() {
             let _ = monitor.try_send(SocketEvent::Listening(endpoint.clone()));
@@ -499,7 +516,8 @@ pub trait Socket: Sized + Send {
         let connect_timeout = backend.socket_options().connect_timeout;
 
         let (socket, endpoint, peer_id) = util::run_with_timeout(connect_timeout, async {
-            let (mut socket, endpoint) = util::connect_forever(endpoint).await?;
+            let (mut socket, endpoint) =
+                util::connect_forever(endpoint, backend.socket_options().context.clone()).await?;
             let peer_id = util::peer_handshake(&mut socket, backend.clone()).await?;
             Ok((socket, endpoint, peer_id))
         })

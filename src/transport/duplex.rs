@@ -35,8 +35,6 @@ impl Pipe {
 }
 
 /// One end of an in-memory duplex connection.
-// Wired up by the inproc transport follow-up.
-#[allow(dead_code)]
 pub(crate) struct DuplexStream {
     incoming: Arc<Mutex<Pipe>>,
     outgoing: Arc<Mutex<Pipe>>,
@@ -45,8 +43,6 @@ pub(crate) struct DuplexStream {
 /// Creates a linked pair of duplex streams.
 ///
 /// Bytes written to the first stream are readable from the second, and vice versa.
-// Wired up by the inproc transport follow-up.
-#[allow(dead_code)]
 pub(crate) fn duplex_pair() -> (DuplexStream, DuplexStream) {
     let a_to_b = Arc::new(Mutex::new(Pipe::default()));
     let b_to_a = Arc::new(Mutex::new(Pipe::default()));

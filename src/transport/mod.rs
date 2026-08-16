@@ -1,13 +1,15 @@
 mod duplex;
+mod inproc;
 #[cfg(all(feature = "ipc-transport", any(target_family = "unix", windows)))]
 mod ipc;
 #[cfg(feature = "tcp-transport")]
 mod tcp;
 
 use crate::codec::FramedIo;
+use crate::context::Context;
 use crate::endpoint::Endpoint;
 use crate::task_handle::TaskHandle;
-use crate::ZmqResult;
+use crate::{ZmqError, ZmqResult};
 
 macro_rules! do_if_enabled {
     ($feature:literal, $body:expr) => {{
@@ -21,11 +23,14 @@ macro_rules! do_if_enabled {
     }};
 }
 
-/// Connectes to the given endpoint
+/// Connects to the given endpoint
 ///
 /// # Panics
 /// Panics if the requested endpoint uses a transport type that isn't enabled
-pub(crate) async fn connect(endpoint: &Endpoint) -> ZmqResult<(FramedIo, Endpoint)> {
+pub(crate) async fn connect(
+    endpoint: &Endpoint,
+    context: Option<&Context>,
+) -> ZmqResult<(FramedIo, Endpoint)> {
     match endpoint {
         Endpoint::Tcp(_host, _port) => {
             do_if_enabled!("tcp-transport", tcp::connect(_host, *_port).await)
@@ -44,9 +49,12 @@ pub(crate) async fn connect(endpoint: &Endpoint) -> ZmqResult<(FramedIo, Endpoin
             #[cfg(not(all(feature = "ipc-transport", any(target_family = "unix", windows))))]
             panic!("IPC transport is not available on this platform")
         }
-        Endpoint::Inproc(_) => Err(crate::error::ZmqError::Socket(
-            "inproc transport is not yet implemented",
-        )),
+        Endpoint::Inproc(name) => {
+            let context = context.ok_or(ZmqError::Socket(
+                "inproc transport requires a Context; set it via SocketOptions::context",
+            ))?;
+            inproc::connect(name, context).await
+        }
     }
 }
 
@@ -65,6 +73,7 @@ pub struct AcceptStopHandle(pub(crate) TaskHandle<()>);
 /// Panics if the requested endpoint uses a transport type that isn't enabled
 pub(crate) async fn begin_accept<T>(
     endpoint: Endpoint,
+    context: Option<Context>,
     cback: impl Fn(ZmqResult<(FramedIo, Endpoint)>) -> T + Send + 'static,
 ) -> ZmqResult<(Endpoint, AcceptStopHandle)>
 where
@@ -90,9 +99,12 @@ where
             #[cfg(not(all(feature = "ipc-transport", any(target_family = "unix", windows))))]
             panic!("IPC transport is not available on this platform")
         }
-        Endpoint::Inproc(_) => Err(crate::error::ZmqError::Socket(
-            "inproc transport is not yet implemented",
-        )),
+        Endpoint::Inproc(name) => {
+            let context = context.ok_or(ZmqError::Socket(
+                "inproc transport requires a Context; set it via SocketOptions::context",
+            ))?;
+            inproc::begin_accept(name, context, _cback).await
+        }
     }
 }
 

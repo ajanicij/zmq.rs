@@ -38,20 +38,24 @@ impl Drop for XSubSocket {
 }
 
 impl XSubSocket {
-    pub async fn subscribe(&mut self, subscription: &str) -> ZmqResult<()> {
-        self.backend.remember_subscription(subscription.as_bytes());
+    /// Subscribe to messages matching `subscription` as a raw byte prefix.
+    ///
+    /// Accepts UTF-8 strings (`"topic"`) and arbitrary byte sequences
+    /// (`b"\xfftopic"`), matching libzmq's binary subscription model.
+    pub async fn subscribe(&mut self, subscription: impl AsRef<[u8]>) -> ZmqResult<()> {
+        let subscription = subscription.as_ref();
+        self.backend.remember_subscription(subscription);
         self.backend
-            .broadcast_subscription(subscription.as_bytes(), SubscriptionMessageType::Subscribe)
+            .broadcast_subscription(subscription, SubscriptionMessageType::Subscribe)
             .await
     }
 
-    pub async fn unsubscribe(&mut self, subscription: &str) -> ZmqResult<()> {
-        self.backend.forget_subscription(subscription.as_bytes());
+    /// Remove a previously registered subscription prefix.
+    pub async fn unsubscribe(&mut self, subscription: impl AsRef<[u8]>) -> ZmqResult<()> {
+        let subscription = subscription.as_ref();
+        self.backend.forget_subscription(subscription);
         self.backend
-            .broadcast_subscription(
-                subscription.as_bytes(),
-                SubscriptionMessageType::Unsubscribe,
-            )
+            .broadcast_subscription(subscription, SubscriptionMessageType::Unsubscribe)
             .await
     }
 }

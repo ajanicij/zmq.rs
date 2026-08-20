@@ -1,10 +1,11 @@
+use zeromq::__async_rt as async_rt;
 use zeromq::*;
 
 use std::convert::TryInto;
 use std::error::Error;
 use std::time::Duration;
 
-#[tokio::test]
+#[async_rt::test]
 async fn push_pull_inproc_roundtrip() -> Result<(), Box<dyn Error>> {
     let ctx = Context::new();
 
@@ -19,7 +20,7 @@ async fn push_pull_inproc_roundtrip() -> Result<(), Box<dyn Error>> {
     push.connect("inproc://push-pull").await?;
 
     // Give the accept task a moment to complete the ZMTP handshake.
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    async_rt::task::sleep(Duration::from_millis(50)).await;
 
     push.send("hello-inproc".into()).await?;
     let msg = pull.recv().await?;
@@ -29,7 +30,7 @@ async fn push_pull_inproc_roundtrip() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::test]
+#[async_rt::test]
 async fn inproc_requires_context() -> Result<(), Box<dyn Error>> {
     let mut pull = PullSocket::new();
     let err = pull.bind("inproc://no-context").await.unwrap_err();

@@ -1,3 +1,4 @@
+use zeromq::__async_rt as async_rt;
 use zeromq::*;
 
 use std::convert::TryInto;
@@ -5,10 +6,10 @@ use std::error::Error;
 use std::time::Duration;
 
 async fn wait_for_peer_handshake() {
-    tokio::time::sleep(Duration::from_millis(50)).await;
+    async_rt::task::sleep(Duration::from_millis(50)).await;
 }
 
-#[tokio::test]
+#[async_rt::test]
 async fn pair_over_tcp_roundtrip() -> Result<(), Box<dyn Error>> {
     let mut server = PairSocket::new();
     let bound = server.bind("tcp://127.0.0.1:0").await?;
@@ -30,7 +31,7 @@ async fn pair_over_tcp_roundtrip() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::test]
+#[async_rt::test]
 async fn pair_over_inproc_roundtrip() -> Result<(), Box<dyn Error>> {
     let ctx = Context::new();
 
@@ -53,7 +54,7 @@ async fn pair_over_inproc_roundtrip() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::test]
+#[async_rt::test]
 async fn pair_rejects_second_peer() -> Result<(), Box<dyn Error>> {
     let mut server = PairSocket::new();
     let bound = server.bind("tcp://127.0.0.1:0").await?;
